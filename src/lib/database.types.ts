@@ -1,4 +1,4 @@
-export type SuggestionStatus = 'hidden' | 'pending' | 'in_progress' | 'published'
+export type SuggestionStatus = 'hidden' | 'pending_review' | 'open_for_voting' | 'in_progress' | 'published'
 
 export interface Suggestion {
   id: string

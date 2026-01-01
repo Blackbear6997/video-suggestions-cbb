@@ -6,7 +6,7 @@ import type { Suggestion } from '@/lib/database.types'
 import SuggestionCard from '@/components/SuggestionCard'
 import SearchBar from '@/components/SearchBar'
 
-type FilterStatus = 'all' | 'pending' | 'in_progress' | 'published'
+type FilterStatus = 'all' | 'open_for_voting' | 'in_progress' | 'published'
 
 export default function Home() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -23,7 +23,12 @@ export default function Home() {
       .order('votes_count', { ascending: false })
 
     if (!error && data) {
-      const visibleSuggestions = data.filter(s => s.status !== 'hidden')
+      // Only show suggestions that are open for voting, in progress, or published
+      const visibleSuggestions = data.filter(s =>
+        s.status === 'open_for_voting' ||
+        s.status === 'in_progress' ||
+        s.status === 'published'
+      )
       setSuggestions(visibleSuggestions)
     }
     setLoading(false)
@@ -104,8 +109,8 @@ export default function Home() {
         <div className="flex-1">
           <SearchBar onSearch={setSearchQuery} />
         </div>
-        <div className="flex gap-2">
-          {(['all', 'pending', 'in_progress', 'published'] as FilterStatus[]).map((status) => (
+        <div className="flex gap-2 flex-wrap">
+          {(['all', 'open_for_voting', 'in_progress', 'published'] as FilterStatus[]).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -115,7 +120,7 @@ export default function Home() {
                   : 'bg-[var(--card)] border border-[var(--border)] hover:bg-[var(--card-hover)]'
               }`}
             >
-              {status === 'all' ? 'All' : status === 'in_progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1)}
+              {status === 'all' ? 'All' : status === 'open_for_voting' ? 'Voting' : status === 'in_progress' ? 'In Progress' : 'Published'}
             </button>
           ))}
         </div>

@@ -11,14 +11,16 @@ interface SuggestionCardProps {
 
 const statusColors = {
   hidden: 'bg-purple-500',
-  pending: 'bg-gray-500',
+  pending_review: 'bg-gray-500',
+  open_for_voting: 'bg-blue-500',
   in_progress: 'bg-[var(--warning)]',
   published: 'bg-[var(--success)]',
 }
 
 const statusLabels = {
   hidden: 'Hidden',
-  pending: 'Pending',
+  pending_review: 'Pending Review',
+  open_for_voting: 'Open for Voting',
   in_progress: 'In Progress',
   published: 'Published',
 }
@@ -81,7 +83,7 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
           )}
         </div>
 
-        {showVoteButton && suggestion.status === 'pending' && (
+        {showVoteButton && suggestion.status === 'open_for_voting' && (
           <div className="flex flex-col items-center gap-2">
             <div className="text-center">
               <div className="text-2xl font-bold text-[var(--primary)]">{localVotes}</div>
@@ -128,7 +130,7 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
           </div>
         )}
 
-        {!showVoteButton && (
+        {(!showVoteButton || suggestion.status !== 'open_for_voting') && (
           <div className="text-center">
             <div className="text-2xl font-bold text-[var(--primary)]">{localVotes}</div>
             <div className="text-xs text-gray-500">votes</div>

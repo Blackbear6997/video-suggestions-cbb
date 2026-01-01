@@ -100,14 +100,16 @@ export default function AdminDashboard() {
 
   const statusColors: Record<SuggestionStatus, string> = {
     hidden: 'bg-purple-500',
-    pending: 'bg-gray-500',
+    pending_review: 'bg-gray-500',
+    open_for_voting: 'bg-blue-500',
     in_progress: 'bg-[var(--warning)]',
     published: 'bg-[var(--success)]',
   }
 
   const statusLabels: Record<SuggestionStatus, string> = {
     hidden: 'Hidden',
-    pending: 'Pending',
+    pending_review: 'Pending Review',
+    open_for_voting: 'Open for Voting',
     in_progress: 'In Progress',
     published: 'Published',
   }
@@ -125,7 +127,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        {(['all', 'hidden', 'pending', 'in_progress', 'published'] as const).map((status) => (
+        {(['all', 'hidden', 'pending_review', 'open_for_voting', 'in_progress', 'published'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -180,16 +182,36 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-col gap-2">
+                  {/* Hidden -> Pending Review */}
                   {suggestion.status === 'hidden' && (
                     <button
-                      onClick={() => updateStatus(suggestion.id, 'pending')}
-                      className="px-3 py-1.5 bg-[var(--primary)] text-white rounded text-sm hover:opacity-80"
+                      onClick={() => updateStatus(suggestion.id, 'pending_review')}
+                      className="px-3 py-1.5 bg-gray-500 text-white rounded text-sm hover:opacity-80"
                     >
-                      Add to List
+                      Review
                     </button>
                   )}
 
-                  {suggestion.status === 'pending' && (
+                  {/* Pending Review -> Open for Voting or back to Hidden */}
+                  {suggestion.status === 'pending_review' && (
+                    <>
+                      <button
+                        onClick={() => updateStatus(suggestion.id, 'open_for_voting')}
+                        className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:opacity-80"
+                      >
+                        Open for Voting
+                      </button>
+                      <button
+                        onClick={() => updateStatus(suggestion.id, 'hidden')}
+                        className="px-3 py-1.5 border border-[var(--border)] rounded text-sm hover:bg-[var(--card-hover)]"
+                      >
+                        Reject (Hide)
+                      </button>
+                    </>
+                  )}
+
+                  {/* Open for Voting -> In Progress */}
+                  {suggestion.status === 'open_for_voting' && (
                     <>
                       <button
                         onClick={() => updateStatus(suggestion.id, 'in_progress')}
@@ -198,14 +220,15 @@ export default function AdminDashboard() {
                         Start Working
                       </button>
                       <button
-                        onClick={() => updateStatus(suggestion.id, 'hidden')}
+                        onClick={() => updateStatus(suggestion.id, 'pending_review')}
                         className="px-3 py-1.5 border border-[var(--border)] rounded text-sm hover:bg-[var(--card-hover)]"
                       >
-                        Hide
+                        Back to Review
                       </button>
                     </>
                   )}
 
+                  {/* In Progress -> Publish */}
                   {suggestion.status === 'in_progress' && (
                     <>
                       {editingId === suggestion.id ? (
@@ -244,10 +267,10 @@ export default function AdminDashboard() {
                         </button>
                       )}
                       <button
-                        onClick={() => updateStatus(suggestion.id, 'pending')}
+                        onClick={() => updateStatus(suggestion.id, 'open_for_voting')}
                         className="px-3 py-1.5 border border-[var(--border)] rounded text-sm hover:bg-[var(--card-hover)]"
                       >
-                        Back to Pending
+                        Back to Voting
                       </button>
                     </>
                   )}
