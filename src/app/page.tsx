@@ -22,9 +22,14 @@ export default function Home() {
       .select('*')
       .order('votes_count', { ascending: false })
 
+    console.log('Raw data from Supabase:', data)
+    console.log('Error:', error)
+
     if (!error && data) {
       // Filter out hidden suggestions on client side
       const visibleSuggestions = data.filter(s => s.status !== 'hidden')
+      console.log('Filtered suggestions:', visibleSuggestions)
+      console.log('Statuses:', data.map(s => s.status))
       setSuggestions(visibleSuggestions)
     }
     setLoading(false)
