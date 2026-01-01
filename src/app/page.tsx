@@ -20,6 +20,7 @@ export default function Home() {
     const { data, error } = await supabase
       .from('suggestions')
       .select('*')
+      .neq('status', 'hidden')
       .order('votes_count', { ascending: false })
 
     if (!error && data) {

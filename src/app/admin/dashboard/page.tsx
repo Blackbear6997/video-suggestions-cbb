@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const router = useRouter()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<SuggestionStatus | 'all'>('all')
+  const [filter, setFilter] = useState<SuggestionStatus | 'all'>('hidden')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [videoUrl, setVideoUrl] = useState('')
 
@@ -98,10 +98,18 @@ export default function AdminDashboard() {
     }
   }
 
-  const statusColors = {
+  const statusColors: Record<SuggestionStatus, string> = {
+    hidden: 'bg-purple-500',
     pending: 'bg-gray-500',
     in_progress: 'bg-[var(--warning)]',
     published: 'bg-[var(--success)]',
+  }
+
+  const statusLabels: Record<SuggestionStatus, string> = {
+    hidden: 'Hidden',
+    pending: 'Pending',
+    in_progress: 'In Progress',
+    published: 'Published',
   }
 
   return (
@@ -116,8 +124,8 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      <div className="flex gap-2">
-        {(['all', 'pending', 'in_progress', 'published'] as const).map((status) => (
+      <div className="flex gap-2 flex-wrap">
+        {(['all', 'hidden', 'pending', 'in_progress', 'published'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -127,7 +135,7 @@ export default function AdminDashboard() {
                 : 'bg-[var(--card)] border border-[var(--border)] hover:bg-[var(--card-hover)]'
             }`}
           >
-            {status === 'all' ? 'All' : status === 'in_progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1)}
+            {status === 'all' ? 'All' : statusLabels[status]}
           </button>
         ))}
       </div>
@@ -148,7 +156,7 @@ export default function AdminDashboard() {
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-semibold">{suggestion.title}</h3>
                     <span className={`px-2 py-0.5 rounded text-xs text-white ${statusColors[suggestion.status]}`}>
-                      {suggestion.status === 'in_progress' ? 'In Progress' : suggestion.status.charAt(0).toUpperCase() + suggestion.status.slice(1)}
+                      {statusLabels[suggestion.status]}
                     </span>
                     <span className="text-sm text-gray-500">{suggestion.votes_count} votes</span>
                   </div>
@@ -172,13 +180,30 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  {suggestion.status === 'pending' && (
+                  {suggestion.status === 'hidden' && (
                     <button
-                      onClick={() => updateStatus(suggestion.id, 'in_progress')}
-                      className="px-3 py-1.5 bg-[var(--warning)] text-white rounded text-sm hover:opacity-80"
+                      onClick={() => updateStatus(suggestion.id, 'pending')}
+                      className="px-3 py-1.5 bg-[var(--primary)] text-white rounded text-sm hover:opacity-80"
                     >
-                      Start Working
+                      Add to List
                     </button>
+                  )}
+
+                  {suggestion.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => updateStatus(suggestion.id, 'in_progress')}
+                        className="px-3 py-1.5 bg-[var(--warning)] text-white rounded text-sm hover:opacity-80"
+                      >
+                        Start Working
+                      </button>
+                      <button
+                        onClick={() => updateStatus(suggestion.id, 'hidden')}
+                        className="px-3 py-1.5 border border-[var(--border)] rounded text-sm hover:bg-[var(--card-hover)]"
+                      >
+                        Hide
+                      </button>
+                    </>
                   )}
 
                   {suggestion.status === 'in_progress' && (

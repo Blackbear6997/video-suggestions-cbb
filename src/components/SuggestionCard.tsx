@@ -10,12 +10,14 @@ interface SuggestionCardProps {
 }
 
 const statusColors = {
+  hidden: 'bg-purple-500',
   pending: 'bg-gray-500',
   in_progress: 'bg-[var(--warning)]',
   published: 'bg-[var(--success)]',
 }
 
 const statusLabels = {
+  hidden: 'Hidden',
   pending: 'Pending',
   in_progress: 'In Progress',
   published: 'Published',

@@ -58,7 +58,7 @@ export default function SubmitPage() {
       description: formData.description,
       requester_name: formData.requester_name,
       requester_email: formData.requester_email,
-      status: 'pending',
+      status: 'hidden',
       video_url: null,
     })
 
