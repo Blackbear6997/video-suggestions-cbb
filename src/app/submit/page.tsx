@@ -53,14 +53,14 @@ export default function SubmitPage() {
       return
     }
 
-    const { error: insertError } = await supabase.from('suggestions').insert({
+    const { error: insertError } = await supabase.from('suggestions').insert([{
       title: formData.title,
       description: formData.description,
       requester_name: formData.requester_name,
       requester_email: formData.requester_email,
-      status: 'hidden',
+      status: 'hidden' as const,
       video_url: null,
-    })
+    }])
 
     if (insertError) {
       setError('Failed to submit suggestion. Please try again.')
