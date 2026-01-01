@@ -20,11 +20,12 @@ export default function Home() {
     const { data, error } = await supabase
       .from('suggestions')
       .select('*')
-      .in('status', ['pending', 'in_progress', 'published'])
       .order('votes_count', { ascending: false })
 
     if (!error && data) {
-      setSuggestions(data)
+      // Filter out hidden suggestions on client side
+      const visibleSuggestions = data.filter(s => s.status !== 'hidden')
+      setSuggestions(visibleSuggestions)
     }
     setLoading(false)
   }, [])
