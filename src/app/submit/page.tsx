@@ -63,7 +63,7 @@ export default function SubmitPage() {
           score += 10
         }
         // Partial match - word appears within a title word (lower score)
-        else if (suggestionWords.some(sw => sw.includes(word) || word.includes(sw))) {
+        else if (suggestionWords.some((sw: string) => sw.includes(word) || word.includes(sw))) {
           score += 3
         }
       }
