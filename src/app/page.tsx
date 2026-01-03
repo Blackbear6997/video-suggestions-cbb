@@ -139,7 +139,7 @@ export default function Home() {
                 <div className="text-xs text-[var(--foreground-muted)]">Total</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-400">{stats.voting}</div>
+                <div className="text-2xl font-bold text-[#36D6B5]">{stats.voting}</div>
                 <div className="text-xs text-[var(--foreground-muted)]">Voting</div>
               </div>
               <div className="text-center">
@@ -147,7 +147,7 @@ export default function Home() {
                 <div className="text-xs text-[var(--foreground-muted)]">In Progress</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-400">{stats.published}</div>
+                <div className="text-2xl font-bold text-[#36D6B5]">{stats.published}</div>
                 <div className="text-xs text-[var(--foreground-muted)]">Published</div>
               </div>
             </div>

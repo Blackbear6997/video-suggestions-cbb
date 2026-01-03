@@ -7,9 +7,9 @@ import { supabase } from '@/lib/supabase'
 import type { Suggestion } from '@/lib/database.types'
 
 const statusConfig = {
-  open_for_voting: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Open for Voting' },
+  open_for_voting: { color: 'bg-[#36D6B5]/20 text-[#36D6B5] border-[#36D6B5]/30', label: 'Open for Voting' },
   in_progress: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'In Progress' },
-  published: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', label: 'Published' },
+  published: { color: 'bg-[#36D6B5]/20 text-[#36D6B5] border-[#36D6B5]/30', label: 'Published' },
 }
 
 export default function SubmitPage() {

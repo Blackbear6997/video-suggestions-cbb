@@ -100,11 +100,11 @@ function VideoEmbed({ url }: { url: string }) {
 }
 
 const statusConfig = {
-  hidden: { color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', label: 'Hidden' },
+  hidden: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', label: 'Hidden' },
   pending_review: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', label: 'Pending Review' },
-  open_for_voting: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Open for Voting' },
+  open_for_voting: { color: 'bg-[#36D6B5]/20 text-[#36D6B5] border-[#36D6B5]/30', label: 'Open for Voting' },
   in_progress: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'In Progress' },
-  published: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', label: 'Published' },
+  published: { color: 'bg-[#36D6B5]/20 text-[#36D6B5] border-[#36D6B5]/30', label: 'Published' },
 }
 
 export default function SuggestionCard({ suggestion, onVote, showVoteButton = true }: SuggestionCardProps) {
