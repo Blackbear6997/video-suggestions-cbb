@@ -260,10 +260,6 @@ export default function SubmitPage() {
           )}
         </button>
 
-        {/* Privacy Note */}
-        <p className="text-xs text-[var(--foreground-muted)] text-center">
-          Your email will only be used to notify you when your requested video is published.
-        </p>
       </form>
     </div>
   )
