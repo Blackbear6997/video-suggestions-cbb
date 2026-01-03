@@ -26,22 +26,59 @@ export default function SubmitPage() {
   const [similarSuggestions, setSimilarSuggestions] = useState<Suggestion[]>([])
 
   const searchSimilar = useCallback(async (title: string) => {
-    if (title.length < 5) {
+    // Extract meaningful words (3+ chars, not common words)
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'how', 'what', 'why', 'when', 'where', 'who', 'which', 'this', 'that', 'these', 'those', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'your', 'you', 'use', 'using', 'make', 'get', 'into'])
+
+    const words = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+      .split(/\s+/)
+      .filter(word => word.length >= 3 && !stopWords.has(word))
+
+    if (words.length === 0) {
       setSimilarSuggestions([])
       return
     }
 
-    // Only search in title for better relevance (not description which can have false matches)
+    // Fetch all visible suggestions and score them client-side
     const { data } = await supabase
       .from('suggestions')
       .select('*')
       .in('status', ['open_for_voting', 'in_progress', 'published'])
-      .ilike('title', `%${title}%`)
-      .limit(5)
 
-    if (data) {
-      setSimilarSuggestions(data)
+    if (!data) {
+      setSimilarSuggestions([])
+      return
     }
+
+    // Score each suggestion based on word matches in title
+    const scored = data.map(suggestion => {
+      const suggestionTitle = suggestion.title.toLowerCase()
+      const suggestionWords = suggestionTitle.replace(/[^a-z0-9\s]/g, '').split(/\s+/)
+
+      let score = 0
+      for (const word of words) {
+        // Exact word match in title (highest score)
+        if (suggestionWords.includes(word)) {
+          score += 10
+        }
+        // Partial match - word appears within a title word (lower score)
+        else if (suggestionWords.some(sw => sw.includes(word) || word.includes(sw))) {
+          score += 3
+        }
+      }
+
+      return { suggestion, score }
+    })
+
+    // Filter to only suggestions with meaningful matches, sort by score
+    const matches = scored
+      .filter(s => s.score >= 10) // At least one exact word match
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map(s => s.suggestion)
+
+    setSimilarSuggestions(matches)
   }, [])
 
   useEffect(() => {
