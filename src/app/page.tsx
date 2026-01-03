@@ -87,6 +87,26 @@ function HomeContent() {
       )
     }
 
+    // Sort based on filter:
+    // - Published: sort by date (newest first)
+    // - Voting/In Progress: sort by votes (highest first)
+    // - All: published first by date, then others by votes
+    filtered = [...filtered].sort((a, b) => {
+      if (filter === 'published') {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      } else if (filter === 'open_for_voting' || filter === 'in_progress') {
+        return b.votes_count - a.votes_count
+      } else {
+        // "all" filter: group by status then sort appropriately
+        if (a.status === 'published' && b.status !== 'published') return 1
+        if (a.status !== 'published' && b.status === 'published') return -1
+        if (a.status === 'published' && b.status === 'published') {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        }
+        return b.votes_count - a.votes_count
+      }
+    })
+
     setFilteredSuggestions(filtered)
   }, [suggestions, filter, channelFilter, searchQuery])
 
