@@ -63,26 +63,8 @@ export default function Home() {
     setFilteredSuggestions(filtered)
   }, [suggestions, filter, searchQuery])
 
-  const handleVote = async (suggestionId: string, email: string): Promise<boolean> => {
-    const { data: existingVote } = await supabase
-      .from('votes')
-      .select('id')
-      .eq('suggestion_id', suggestionId)
-      .eq('voter_email', email)
-      .single()
-
-    if (existingVote) {
-      return false
-    }
-
-    const { error: voteError } = await supabase
-      .from('votes')
-      .insert({ suggestion_id: suggestionId, voter_email: email })
-
-    if (voteError) {
-      return false
-    }
-
+  const handleVote = async (suggestionId: string): Promise<boolean> => {
+    // Just increment the vote count - localStorage handles duplicate prevention on client
     const { error: updateError } = await supabase
       .from('suggestions')
       .update({ votes_count: (suggestions.find(s => s.id === suggestionId)?.votes_count || 0) + 1 })
@@ -94,9 +76,10 @@ export default function Home() {
           s.id === suggestionId ? { ...s, votes_count: s.votes_count + 1 } : s
         )
       )
+      return true
     }
 
-    return true
+    return false
   }
 
   const stats = {

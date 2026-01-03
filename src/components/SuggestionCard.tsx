@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Suggestion } from '@/lib/database.types'
 
 interface SuggestionCardProps {
   suggestion: Suggestion
-  onVote?: (id: string, email: string) => Promise<boolean>
+  onVote?: (id: string) => Promise<boolean>
   showVoteButton?: boolean
 }
 
@@ -107,32 +107,48 @@ const statusConfig = {
   published: { color: 'bg-[#36D6B5]/20 text-[#36D6B5] border-[#36D6B5]/30', label: 'Published' },
 }
 
+// Helper to check if user has voted for a suggestion
+function hasVotedFor(suggestionId: string): boolean {
+  if (typeof window === 'undefined') return false
+  const votes = JSON.parse(localStorage.getItem('voted_suggestions') || '[]')
+  return votes.includes(suggestionId)
+}
+
+// Helper to mark suggestion as voted
+function markAsVoted(suggestionId: string): void {
+  if (typeof window === 'undefined') return
+  const votes = JSON.parse(localStorage.getItem('voted_suggestions') || '[]')
+  if (!votes.includes(suggestionId)) {
+    votes.push(suggestionId)
+    localStorage.setItem('voted_suggestions', JSON.stringify(votes))
+  }
+}
+
 export default function SuggestionCard({ suggestion, onVote, showVoteButton = true }: SuggestionCardProps) {
   const [isVoting, setIsVoting] = useState(false)
-  const [voteEmail, setVoteEmail] = useState('')
-  const [showVoteForm, setShowVoteForm] = useState(false)
   const [voteError, setVoteError] = useState('')
   const [localVotes, setLocalVotes] = useState(suggestion.votes_count)
   const [hasVoted, setHasVoted] = useState(false)
 
+  // Check localStorage on mount
+  useEffect(() => {
+    setHasVoted(hasVotedFor(suggestion.id))
+  }, [suggestion.id])
+
   const handleVote = async () => {
-    if (!voteEmail) {
-      setVoteError('Please enter your email')
-      return
-    }
+    if (hasVoted) return
 
     setIsVoting(true)
     setVoteError('')
 
     try {
-      const success = await onVote?.(suggestion.id, voteEmail)
+      const success = await onVote?.(suggestion.id)
       if (success) {
         setLocalVotes(prev => prev + 1)
-        setShowVoteForm(false)
-        setVoteEmail('')
+        markAsVoted(suggestion.id)
         setHasVoted(true)
       } else {
-        setVoteError('You have already voted for this suggestion')
+        setVoteError('Vote failed. Please try again.')
       }
     } catch {
       setVoteError('Failed to vote. Please try again.')
@@ -206,48 +222,28 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
           </div>
 
           {showVoteButton && suggestion.status === 'open_for_voting' && !hasVoted && (
-            <>
-              {!showVoteForm ? (
-                <button
-                  onClick={() => setShowVoteForm(true)}
-                  className="btn-primary w-full px-4 py-2.5 rounded-xl font-medium text-white text-sm flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            <div className="flex flex-col gap-2 w-full">
+              {voteError && <p className="text-red-400 text-xs text-center">{voteError}</p>}
+              <button
+                onClick={handleVote}
+                disabled={isVoting}
+                className="btn-primary w-full px-4 py-2.5 rounded-xl font-medium text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isVoting ? (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Vote
-                </button>
-              ) : (
-                <div className="flex flex-col gap-2 w-full">
-                  <input
-                    type="email"
-                    placeholder="Your email"
-                    value={voteEmail}
-                    onChange={(e) => setVoteEmail(e.target.value)}
-                    className="px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg text-sm w-full"
-                  />
-                  {voteError && <p className="text-red-400 text-xs">{voteError}</p>}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleVote}
-                      disabled={isVoting}
-                      className="flex-1 px-3 py-2 btn-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
-                    >
-                      {isVoting ? '...' : 'Submit'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowVoteForm(false)
-                        setVoteError('')
-                      }}
-                      className="px-3 py-2 border border-[var(--border)] rounded-lg text-sm hover:bg-[var(--card-hover)]"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                    Vote
+                  </>
+                )}
+              </button>
+            </div>
           )}
 
           {hasVoted && (
