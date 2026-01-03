@@ -27,6 +27,7 @@ export default function SubmitPage() {
       .from('suggestions')
       .select('*')
       .ilike('title', `%${title}%`)
+      .in('status', ['open_for_voting', 'in_progress', 'published'])
       .limit(5)
 
     if (data) {
@@ -102,9 +103,29 @@ export default function SubmitPage() {
                   className="p-3 bg-[var(--background)] rounded border border-[var(--border)]"
                 >
                   <p className="font-medium">{suggestion.title}</p>
-                  <p className="text-sm text-gray-500">
-                    {suggestion.votes_count} votes - Status: {suggestion.status}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm text-gray-500">
+                      {suggestion.votes_count} votes
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      suggestion.status === 'open_for_voting' ? 'bg-blue-500 text-white' :
+                      suggestion.status === 'in_progress' ? 'bg-yellow-500 text-black' :
+                      'bg-green-500 text-white'
+                    }`}>
+                      {suggestion.status === 'open_for_voting' ? 'Open for Voting' :
+                       suggestion.status === 'in_progress' ? 'In Progress' : 'Published'}
+                    </span>
+                    {suggestion.status === 'open_for_voting' && (
+                      <a href="/" className="text-xs text-[var(--primary)] hover:underline">
+                        Vote for this instead →
+                      </a>
+                    )}
+                    {suggestion.status === 'published' && suggestion.video_url && (
+                      <a href={suggestion.video_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--primary)] hover:underline">
+                        Watch video →
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
