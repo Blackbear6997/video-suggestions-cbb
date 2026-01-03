@@ -5,6 +5,60 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Suggestion, SuggestionStatus } from '@/lib/database.types'
 
+function getVideoEmbed(url: string): { type: 'youtube' | 'vimeo' | 'direct' | null; embedUrl: string | null } {
+  if (!url) return { type: null, embedUrl: null }
+
+  // YouTube
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  if (youtubeMatch) {
+    return { type: 'youtube', embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}` }
+  }
+
+  // Vimeo
+  const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/)
+  if (vimeoMatch) {
+    return { type: 'vimeo', embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}` }
+  }
+
+  // Direct video file
+  if (url.match(/\.(mp4|webm|ogg)(\?.*)?$/i)) {
+    return { type: 'direct', embedUrl: url }
+  }
+
+  return { type: null, embedUrl: null }
+}
+
+function VideoPreview({ url }: { url: string }) {
+  const { type, embedUrl } = getVideoEmbed(url)
+
+  if (!embedUrl) {
+    return (
+      <div className="mt-2 p-3 bg-[var(--background)] border border-[var(--border)] rounded text-sm text-gray-400">
+        Paste a YouTube, Vimeo, or direct video URL to preview
+      </div>
+    )
+  }
+
+  if (type === 'direct') {
+    return (
+      <video
+        src={embedUrl}
+        controls
+        className="mt-2 w-full max-w-md rounded border border-[var(--border)]"
+      />
+    )
+  }
+
+  return (
+    <iframe
+      src={embedUrl}
+      className="mt-2 w-full max-w-md aspect-video rounded border border-[var(--border)]"
+      allowFullScreen
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    />
+  )
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -235,15 +289,17 @@ export default function AdminDashboard() {
                         <div className="flex flex-col gap-2">
                           <input
                             type="url"
-                            placeholder="Video URL"
+                            placeholder="YouTube, Vimeo, or video URL"
                             value={videoUrl}
                             onChange={(e) => setVideoUrl(e.target.value)}
-                            className="px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] rounded text-sm w-48"
+                            className="px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] rounded text-sm w-64"
                           />
+                          <VideoPreview url={videoUrl} />
                           <div className="flex gap-2">
                             <button
                               onClick={() => publishVideo(suggestion.id)}
-                              className="px-3 py-1.5 bg-[var(--success)] text-white rounded text-sm hover:opacity-80"
+                              disabled={!getVideoEmbed(videoUrl).embedUrl}
+                              className="px-3 py-1.5 bg-[var(--success)] text-white rounded text-sm hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Publish
                             </button>
