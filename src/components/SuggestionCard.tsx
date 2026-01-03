@@ -61,7 +61,7 @@ function VideoEmbed({ url }: { url: string }) {
   if (type === 'youtube' && thumbnailUrl && !showPlayer) {
     return (
       <div
-        className="mt-3 inline-block relative cursor-pointer group max-w-md"
+        className="inline-block relative cursor-pointer group w-full md:w-80"
         onClick={() => setShowPlayer(true)}
       >
         <img
@@ -86,7 +86,7 @@ function VideoEmbed({ url }: { url: string }) {
       <video
         src={embedUrl}
         controls
-        className="mt-3 w-full max-w-md rounded-lg border border-[var(--border)]"
+        className="w-full md:w-80 rounded-lg border border-[var(--border)]"
       />
     )
   }
@@ -94,7 +94,7 @@ function VideoEmbed({ url }: { url: string }) {
   return (
     <iframe
       src={embedUrl}
-      className="mt-3 w-full max-w-md aspect-video rounded-lg border border-[var(--border)]"
+      className="w-full md:w-80 aspect-video rounded-lg border border-[var(--border)]"
       allowFullScreen
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
     />
@@ -149,6 +149,39 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
     }
   }
 
+  // Special layout for published videos
+  if (suggestion.status === 'published' && suggestion.video_url) {
+    return (
+      <div className="bg-[var(--card)] rounded-lg p-6 border border-[var(--border)] hover:border-[var(--primary)] transition-colors">
+        {/* Title row */}
+        <div className="flex items-center gap-3 mb-4">
+          <h3 className="text-lg font-semibold">{suggestion.title}</h3>
+          <span className={`px-2 py-0.5 rounded text-xs text-white ${statusColors[suggestion.status]}`}>
+            {statusLabels[suggestion.status]}
+          </span>
+        </div>
+
+        {/* Desktop: video left, description right | Mobile: video top, description bottom */}
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="md:flex-shrink-0">
+            <VideoEmbed url={suggestion.video_url} />
+          </div>
+          <div className="flex-1 flex flex-col justify-between">
+            <div>
+              <p className="text-gray-400 mb-3">{suggestion.description}</p>
+              <p className="text-sm text-gray-500">
+                Requested by {suggestion.requester_name}
+              </p>
+            </div>
+            <div className="mt-3 text-sm text-gray-500">
+              {localVotes} votes
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-[var(--card)] rounded-lg p-6 border border-[var(--border)] hover:border-[var(--primary)] transition-colors">
       <div className="flex items-start justify-between gap-4">
@@ -163,9 +196,6 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
           <p className="text-sm text-gray-500">
             Requested by {suggestion.requester_name}
           </p>
-          {suggestion.status === 'published' && suggestion.video_url && (
-            <VideoEmbed url={suggestion.video_url} />
-          )}
         </div>
 
         {showVoteButton && suggestion.status === 'open_for_voting' && (
