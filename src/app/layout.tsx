@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Video Suggestions CBB",
+  title: "Video Suggestions",
   description: "Request and vote on video suggestions",
 };
 
