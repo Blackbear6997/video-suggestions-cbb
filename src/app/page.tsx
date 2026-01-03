@@ -97,9 +97,9 @@ function HomeContent() {
       } else if (filter === 'open_for_voting' || filter === 'in_progress') {
         return b.votes_count - a.votes_count
       } else {
-        // "all" filter: group by status then sort appropriately
-        if (a.status === 'published' && b.status !== 'published') return 1
-        if (a.status !== 'published' && b.status === 'published') return -1
+        // "all" filter: published videos first (sorted by date), then others by votes
+        if (a.status === 'published' && b.status !== 'published') return -1
+        if (a.status !== 'published' && b.status === 'published') return 1
         if (a.status === 'published' && b.status === 'published') {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         }
