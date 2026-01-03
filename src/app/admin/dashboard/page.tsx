@@ -66,6 +66,8 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState<SuggestionStatus | 'all'>('hidden')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [videoUrl, setVideoUrl] = useState('')
+  const [videoTitle, setVideoTitle] = useState('')
+  const [videoDescription, setVideoDescription] = useState('')
 
   const checkAuth = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -123,17 +125,39 @@ export default function AdminDashboard() {
   const publishVideo = async (id: string) => {
     if (!videoUrl) return
 
+    const suggestion = suggestions.find(s => s.id === id)
+    const updateData: Record<string, string> = {
+      status: 'published',
+      video_url: videoUrl,
+    }
+
+    // Only update title/description if they were changed
+    if (videoTitle && videoTitle !== suggestion?.title) {
+      updateData.title = videoTitle
+    }
+    if (videoDescription && videoDescription !== suggestion?.description) {
+      updateData.description = videoDescription
+    }
+
     const { error } = await supabase
       .from('suggestions')
-      .update({ status: 'published', video_url: videoUrl })
+      .update(updateData)
       .eq('id', id)
 
     if (!error) {
       setSuggestions(prev =>
-        prev.map(s => (s.id === id ? { ...s, status: 'published', video_url: videoUrl } : s))
+        prev.map(s => (s.id === id ? {
+          ...s,
+          status: 'published' as const,
+          video_url: videoUrl,
+          title: videoTitle || s.title,
+          description: videoDescription || s.description,
+        } : s))
       )
       setEditingId(null)
       setVideoUrl('')
+      setVideoTitle('')
+      setVideoDescription('')
     }
   }
 
@@ -286,14 +310,37 @@ export default function AdminDashboard() {
                   {suggestion.status === 'in_progress' && (
                     <>
                       {editingId === suggestion.id ? (
-                        <div className="flex flex-col gap-2">
-                          <input
-                            type="url"
-                            placeholder="YouTube, Vimeo, or video URL"
-                            value={videoUrl}
-                            onChange={(e) => setVideoUrl(e.target.value)}
-                            className="px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] rounded text-sm w-64"
-                          />
+                        <div className="flex flex-col gap-3 min-w-80">
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Video Title</label>
+                            <input
+                              type="text"
+                              placeholder="Video title"
+                              value={videoTitle}
+                              onChange={(e) => setVideoTitle(e.target.value)}
+                              className="px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] rounded text-sm w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Video Description</label>
+                            <textarea
+                              placeholder="Video description"
+                              value={videoDescription}
+                              onChange={(e) => setVideoDescription(e.target.value)}
+                              rows={3}
+                              className="px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] rounded text-sm w-full resize-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">Video URL</label>
+                            <input
+                              type="url"
+                              placeholder="YouTube, Vimeo, or video URL"
+                              value={videoUrl}
+                              onChange={(e) => setVideoUrl(e.target.value)}
+                              className="px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] rounded text-sm w-full"
+                            />
+                          </div>
                           <VideoPreview url={videoUrl} />
                           <div className="flex gap-2">
                             <button
@@ -307,6 +354,8 @@ export default function AdminDashboard() {
                               onClick={() => {
                                 setEditingId(null)
                                 setVideoUrl('')
+                                setVideoTitle('')
+                                setVideoDescription('')
                               }}
                               className="px-3 py-1.5 border border-[var(--border)] rounded text-sm hover:bg-[var(--card-hover)]"
                             >
@@ -316,7 +365,11 @@ export default function AdminDashboard() {
                         </div>
                       ) : (
                         <button
-                          onClick={() => setEditingId(suggestion.id)}
+                          onClick={() => {
+                            setEditingId(suggestion.id)
+                            setVideoTitle(suggestion.title)
+                            setVideoDescription(suggestion.description)
+                          }}
                           className="px-3 py-1.5 bg-[var(--success)] text-white rounded text-sm hover:opacity-80"
                         >
                           Add Video & Publish
