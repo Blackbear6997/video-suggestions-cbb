@@ -118,6 +118,7 @@ export default function ImportPage() {
         status: 'published',
         video_url: `https://www.youtube.com/watch?v=${video.id}`,
         votes_count: 0,
+        created_at: video.publishedAt,
       })
 
       if (!insertError) {

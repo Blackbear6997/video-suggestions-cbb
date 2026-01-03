@@ -35,6 +35,7 @@ export interface Database {
           status: SuggestionStatus
           video_url?: string | null
           votes_count?: number
+          created_at?: string
         }
         Update: {
           title?: string
