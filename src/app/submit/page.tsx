@@ -73,7 +73,8 @@ export default function SubmitPage() {
     }])
 
     if (insertError) {
-      setError('Failed to submit suggestion. Please try again.')
+      console.error('Submit error:', insertError)
+      setError(`Failed to submit: ${insertError.message}`)
       setIsSubmitting(false)
       return
     }
