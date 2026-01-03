@@ -9,6 +9,98 @@ interface SuggestionCardProps {
   showVoteButton?: boolean
 }
 
+function getVideoEmbed(url: string): { type: 'youtube' | 'vimeo' | 'direct' | null; embedUrl: string | null; thumbnailUrl: string | null } {
+  if (!url) return { type: null, embedUrl: null, thumbnailUrl: null }
+
+  // YouTube
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  if (youtubeMatch) {
+    return {
+      type: 'youtube',
+      embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}`,
+      thumbnailUrl: `https://img.youtube.com/vi/${youtubeMatch[1]}/hqdefault.jpg`
+    }
+  }
+
+  // Vimeo
+  const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/)
+  if (vimeoMatch) {
+    return {
+      type: 'vimeo',
+      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+      thumbnailUrl: null // Vimeo thumbnails require API call
+    }
+  }
+
+  // Direct video file
+  if (url.match(/\.(mp4|webm|ogg)(\?.*)?$/i)) {
+    return { type: 'direct', embedUrl: url, thumbnailUrl: null }
+  }
+
+  return { type: null, embedUrl: null, thumbnailUrl: null }
+}
+
+function VideoEmbed({ url }: { url: string }) {
+  const [showPlayer, setShowPlayer] = useState(false)
+  const { type, embedUrl, thumbnailUrl } = getVideoEmbed(url)
+
+  if (!embedUrl) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block mt-3 text-[var(--primary)] hover:underline"
+      >
+        Watch Video
+      </a>
+    )
+  }
+
+  // For YouTube, show thumbnail first, then embed on click
+  if (type === 'youtube' && thumbnailUrl && !showPlayer) {
+    return (
+      <div
+        className="mt-3 relative cursor-pointer group"
+        onClick={() => setShowPlayer(true)}
+      >
+        <img
+          src={thumbnailUrl}
+          alt="Video thumbnail"
+          className="w-full max-w-md rounded-lg border border-[var(--border)]"
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center group-hover:bg-red-700 transition-colors">
+            <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show embedded player
+  if (type === 'direct') {
+    return (
+      <video
+        src={embedUrl}
+        controls
+        className="mt-3 w-full max-w-md rounded-lg border border-[var(--border)]"
+      />
+    )
+  }
+
+  return (
+    <iframe
+      src={embedUrl}
+      className="mt-3 w-full max-w-md aspect-video rounded-lg border border-[var(--border)]"
+      allowFullScreen
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    />
+  )
+}
+
 const statusColors = {
   hidden: 'bg-purple-500',
   pending_review: 'bg-gray-500',
@@ -72,14 +164,7 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
             Requested by {suggestion.requester_name}
           </p>
           {suggestion.status === 'published' && suggestion.video_url && (
-            <a
-              href={suggestion.video_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block mt-3 text-[var(--primary)] hover:underline"
-            >
-              Watch Video
-            </a>
+            <VideoEmbed url={suggestion.video_url} />
           )}
         </div>
 
