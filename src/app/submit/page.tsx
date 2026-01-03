@@ -26,17 +26,17 @@ export default function SubmitPage() {
   const [similarSuggestions, setSimilarSuggestions] = useState<Suggestion[]>([])
 
   const searchSimilar = useCallback(async (title: string) => {
-    if (title.length < 3) {
+    if (title.length < 5) {
       setSimilarSuggestions([])
       return
     }
 
-    // Search in both title and description
+    // Only search in title for better relevance (not description which can have false matches)
     const { data } = await supabase
       .from('suggestions')
       .select('*')
       .in('status', ['open_for_voting', 'in_progress', 'published'])
-      .or(`title.ilike.%${title}%,description.ilike.%${title}%`)
+      .ilike('title', `%${title}%`)
       .limit(5)
 
     if (data) {
