@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import type { Suggestion } from '@/lib/database.types'
+import type { Suggestion, Channel } from '@/lib/database.types'
 
 const statusConfig = {
   open_for_voting: { color: 'bg-[#36D6B5]/20 text-[#36D6B5] border-[#36D6B5]/30', label: 'Open for Voting' },
@@ -19,6 +19,7 @@ export default function SubmitPage() {
     description: '',
     requester_name: '',
     requester_email: '',
+    channel: '' as Channel | '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -55,7 +56,7 @@ export default function SubmitPage() {
     setIsSubmitting(true)
     setError('')
 
-    if (!formData.title || !formData.description || !formData.requester_name || !formData.requester_email) {
+    if (!formData.title || !formData.description || !formData.requester_name || !formData.requester_email || !formData.channel) {
       setError('Please fill in all fields')
       setIsSubmitting(false)
       return
@@ -66,6 +67,7 @@ export default function SubmitPage() {
       description: formData.description,
       requester_name: formData.requester_name,
       requester_email: formData.requester_email,
+      channel: formData.channel,
       status: 'hidden' as const,
       video_url: null,
     }])
@@ -115,6 +117,49 @@ export default function SubmitPage() {
               className="w-full pl-12 pr-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--foreground-muted)]"
               placeholder="What video would you like to see?"
             />
+          </div>
+        </div>
+
+        {/* Channel Selection */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-[var(--foreground)]">
+            Which channel is this for? <span className="text-red-400">*</span>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, channel: 'cbb' })}
+              className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                formData.channel === 'cbb'
+                  ? 'border-[var(--primary)] bg-[var(--primary)]/10'
+                  : 'border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-hover)]'
+              }`}
+            >
+              <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <span className={`font-semibold ${formData.channel === 'cbb' ? 'text-[var(--primary)]' : 'text-[var(--foreground)]'}`}>
+                ChatBot Builder
+              </span>
+              <span className="text-xs text-[var(--foreground-muted)]">@OfficialChatbotBuilder</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, channel: 'pmgpt' })}
+              className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                formData.channel === 'pmgpt'
+                  ? 'border-[var(--primary)] bg-[var(--primary)]/10'
+                  : 'border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-hover)]'
+              }`}
+            >
+              <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <span className={`font-semibold ${formData.channel === 'pmgpt' ? 'text-[var(--primary)]' : 'text-[var(--foreground)]'}`}>
+                PMGPT
+              </span>
+              <span className="text-xs text-[var(--foreground-muted)]">@PAYMEGPT</span>
+            </button>
           </div>
         </div>
 

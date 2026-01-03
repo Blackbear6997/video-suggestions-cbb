@@ -107,6 +107,11 @@ const statusConfig = {
   published: { color: 'bg-[#36D6B5]/20 text-[#36D6B5] border-[#36D6B5]/30', label: 'Published' },
 }
 
+const channelConfig = {
+  cbb: { label: 'CBB', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  pmgpt: { label: 'PMGPT', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+}
+
 // Helper to check if user has voted for a suggestion
 function hasVotedFor(suggestionId: string): boolean {
   if (typeof window === 'undefined') return false
@@ -161,8 +166,13 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
   if (suggestion.status === 'published' && suggestion.video_url) {
     return (
       <div className="card-hover bg-[var(--card)] rounded-2xl p-6 border border-[var(--border)]">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
           <h3 className="text-xl font-semibold">{suggestion.title}</h3>
+          {suggestion.channel && channelConfig[suggestion.channel] && (
+            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${channelConfig[suggestion.channel].color}`}>
+              {channelConfig[suggestion.channel].label}
+            </span>
+          )}
           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusConfig[suggestion.status].color}`}>
             {statusConfig[suggestion.status].label}
           </span>
@@ -199,8 +209,13 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
     <div className="card-hover bg-[var(--card)] rounded-2xl p-6 border border-[var(--border)]">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
             <h3 className="text-xl font-semibold">{suggestion.title}</h3>
+            {suggestion.channel && channelConfig[suggestion.channel] && (
+              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${channelConfig[suggestion.channel].color}`}>
+                {channelConfig[suggestion.channel].label}
+              </span>
+            )}
             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusConfig[suggestion.status].color}`}>
               {statusConfig[suggestion.status].label}
             </span>

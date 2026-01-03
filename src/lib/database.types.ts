@@ -1,4 +1,5 @@
 export type SuggestionStatus = 'hidden' | 'pending_review' | 'open_for_voting' | 'in_progress' | 'published'
+export type Channel = 'cbb' | 'pmgpt'
 
 export interface Suggestion {
   id: string
@@ -6,6 +7,7 @@ export interface Suggestion {
   description: string
   requester_name: string
   requester_email: string
+  channel: Channel
   status: SuggestionStatus
   video_url: string | null
   votes_count: number
@@ -29,6 +31,7 @@ export interface Database {
           description: string
           requester_name: string
           requester_email: string
+          channel: Channel
           status: SuggestionStatus
           video_url?: string | null
           votes_count?: number
@@ -38,6 +41,7 @@ export interface Database {
           description?: string
           requester_name?: string
           requester_email?: string
+          channel?: Channel
           status?: SuggestionStatus
           video_url?: string | null
           votes_count?: number
