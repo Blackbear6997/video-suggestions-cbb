@@ -176,6 +176,67 @@ export default function AdminDashboard() {
     }
   }
 
+  // Clean up YouTube descriptions
+  const cleanDescription = (description: string): string => {
+    if (!description) return 'No description'
+
+    let cleaned = description
+      .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, '') // timestamps
+      .replace(/https?:\/\/[^\s]+/gi, '') // URLs
+      .replace(/#\w+/g, '') // hashtags
+      .replace(/\b(subscribe|like|comment|share|follow|hit the bell|notification|click|link in|check out|don't forget|make sure|below|above)\b[^.!?\n]*/gi, '')
+      .replace(/@\w+/g, '') // handles
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    if (cleaned.length < 10) return 'Watch the video for more details.'
+
+    if (cleaned.length > 250) {
+      const sentences = cleaned.match(/[^.!?]+[.!?]+/g) || [cleaned]
+      let result = ''
+      for (const sentence of sentences) {
+        if ((result + sentence).length <= 250) {
+          result += sentence
+        } else break
+      }
+      cleaned = result.trim() || cleaned.substring(0, 247) + '...'
+    }
+
+    return cleaned
+  }
+
+  const [cleaningDescriptions, setCleaningDescriptions] = useState(false)
+
+  const cleanAllDescriptions = async () => {
+    if (!confirm('Clean descriptions for all YouTube Import videos? This cannot be undone.')) return
+
+    setCleaningDescriptions(true)
+
+    // Get all imported videos
+    const { data } = await supabase
+      .from('suggestions')
+      .select('id, description')
+      .eq('requester_name', 'YouTube Import')
+
+    if (data) {
+      let updated = 0
+      for (const item of data) {
+        const cleanedDesc = cleanDescription(item.description)
+        if (cleanedDesc !== item.description) {
+          await supabase
+            .from('suggestions')
+            .update({ description: cleanedDesc })
+            .eq('id', item.id)
+          updated++
+        }
+      }
+      alert(`Cleaned ${updated} descriptions!`)
+      fetchSuggestions()
+    }
+
+    setCleaningDescriptions(false)
+  }
+
   const statusColors: Record<SuggestionStatus, string> = {
     hidden: 'bg-purple-500',
     pending_review: 'bg-gray-500',
@@ -204,7 +265,7 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-center">
         {(['all', 'hidden', 'pending_review', 'open_for_voting', 'in_progress', 'published'] as const).map((status) => (
           <button
             key={status}
@@ -218,6 +279,30 @@ export default function AdminDashboard() {
             {status === 'all' ? 'All' : statusLabels[status]}
           </button>
         ))}
+        <div className="ml-auto">
+          <button
+            onClick={cleanAllDescriptions}
+            disabled={cleaningDescriptions}
+            className="px-3 py-2 rounded-lg text-sm border border-[var(--border)] hover:bg-[var(--card-hover)] disabled:opacity-50 flex items-center gap-2"
+          >
+            {cleaningDescriptions ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Cleaning...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Clean Descriptions
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {loading ? (

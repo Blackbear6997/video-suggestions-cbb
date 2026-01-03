@@ -35,6 +35,48 @@ function getVideoType(durationSeconds: number, isLive: boolean): 'short' | 'vide
   return 'video'
 }
 
+// Clean up YouTube descriptions for better display
+function cleanDescription(description: string): string {
+  if (!description) return 'No description'
+
+  let cleaned = description
+    // Remove timestamps like 0:00, 12:34, 1:23:45
+    .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, '')
+    // Remove URLs
+    .replace(/https?:\/\/[^\s]+/gi, '')
+    // Remove hashtags
+    .replace(/#\w+/g, '')
+    // Remove common YouTube filler phrases (case insensitive)
+    .replace(/\b(subscribe|like|comment|share|follow|hit the bell|notification|click|link in|check out|don't forget|make sure|below|above)\b[^.!?\n]*/gi, '')
+    // Remove social media handles
+    .replace(/@\w+/g, '')
+    // Remove multiple spaces/newlines
+    .replace(/\s+/g, ' ')
+    // Remove leading/trailing whitespace
+    .trim()
+
+  // If nothing meaningful left, return generic message
+  if (cleaned.length < 10) {
+    return 'Watch the video for more details.'
+  }
+
+  // Find a good cutoff point (end of sentence under 250 chars)
+  if (cleaned.length > 250) {
+    const sentences = cleaned.match(/[^.!?]+[.!?]+/g) || [cleaned]
+    let result = ''
+    for (const sentence of sentences) {
+      if ((result + sentence).length <= 250) {
+        result += sentence
+      } else {
+        break
+      }
+    }
+    cleaned = result.trim() || cleaned.substring(0, 247) + '...'
+  }
+
+  return cleaned
+}
+
 async function getChannelId(handle: string): Promise<string | null> {
   try {
     const response = await fetch(
@@ -77,7 +119,7 @@ async function getChannelVideos(channelId: string, maxResults = 50): Promise<You
         videoIds.push(videoId)
         videoBasicInfo.set(videoId, {
           title: item.snippet.title,
-          description: item.snippet.description?.substring(0, 500) || '',
+          description: cleanDescription(item.snippet.description || ''),
           publishedAt: item.snippet.publishedAt,
           thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
         })
