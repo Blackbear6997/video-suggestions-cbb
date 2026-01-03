@@ -2,8 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Suggestion } from '@/lib/database.types'
+
+const statusConfig = {
+  open_for_voting: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Open for Voting' },
+  in_progress: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'In Progress' },
+  published: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', label: 'Published' },
+}
 
 export default function SubmitPage() {
   const router = useRouter()
@@ -73,70 +80,100 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Submit a Video Suggestion</h1>
+    <div className="max-w-2xl mx-auto animate-fade-in">
+      {/* Header */}
+      <div className="mb-8">
+        <Link href="/" className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] mb-4 transition-colors">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to suggestions
+        </Link>
+        <h1 className="text-4xl font-bold mb-2">
+          <span className="gradient-text">Request a Video</span>
+        </h1>
+        <p className="text-[var(--foreground-muted)]">
+          Have an idea for a video? Submit your suggestion and let others vote on it!
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium mb-2">
+        {/* Title Field */}
+        <div className="space-y-2">
+          <label htmlFor="title" className="block text-sm font-medium text-[var(--foreground)]">
             Video Title
           </label>
-          <input
-            type="text"
-            id="title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full px-4 py-2 bg-[var(--card)] border border-[var(--border)] rounded-lg focus:outline-none focus:border-[var(--primary)]"
-            placeholder="What video would you like to see?"
-          />
+          <div className="relative">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--foreground-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <input
+              type="text"
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full pl-12 pr-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--foreground-muted)]"
+              placeholder="What video would you like to see?"
+            />
+          </div>
         </div>
 
+        {/* Similar Suggestions Warning */}
         {similarSuggestions.length > 0 && (
-          <div className="bg-[var(--card)] border border-[var(--warning)] rounded-lg p-4">
-            <p className="text-sm text-[var(--warning)] font-medium mb-3">
-              Similar suggestions already exist. Are you looking for one of these?
-            </p>
-            <div className="space-y-2">
-              {similarSuggestions.map((suggestion) => (
-                <div
-                  key={suggestion.id}
-                  className="p-3 bg-[var(--background)] rounded border border-[var(--border)]"
-                >
-                  <p className="font-medium">{suggestion.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-gray-500">
-                      {suggestion.votes_count} votes
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      suggestion.status === 'open_for_voting' ? 'bg-blue-500 text-white' :
-                      suggestion.status === 'in_progress' ? 'bg-yellow-500 text-black' :
-                      'bg-green-500 text-white'
-                    }`}>
-                      {suggestion.status === 'open_for_voting' ? 'Open for Voting' :
-                       suggestion.status === 'in_progress' ? 'In Progress' : 'Published'}
-                    </span>
-                    {suggestion.status === 'open_for_voting' && (
-                      <a href="/" className="text-xs text-[var(--primary)] hover:underline">
-                        Vote for this instead →
-                      </a>
-                    )}
-                    {suggestion.status === 'published' && suggestion.video_url && (
-                      <a href={suggestion.video_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--primary)] hover:underline">
-                        Watch video →
-                      </a>
-                    )}
-                  </div>
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 animate-fade-in">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-400 mb-3">
+                  Similar suggestions already exist
+                </p>
+                <div className="space-y-2">
+                  {similarSuggestions.map((suggestion) => (
+                    <div
+                      key={suggestion.id}
+                      className="p-3 bg-[var(--background)] rounded-lg border border-[var(--border)]"
+                    >
+                      <p className="font-medium text-[var(--foreground)]">{suggestion.title}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="text-sm text-[var(--foreground-muted)]">
+                          {suggestion.votes_count} votes
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${statusConfig[suggestion.status as keyof typeof statusConfig]?.color || ''}`}>
+                          {statusConfig[suggestion.status as keyof typeof statusConfig]?.label || suggestion.status}
+                        </span>
+                        {suggestion.status === 'open_for_voting' && (
+                          <Link href="/" className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1">
+                            Vote for this instead
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </Link>
+                        )}
+                        {suggestion.status === 'published' && suggestion.video_url && (
+                          <a href={suggestion.video_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1">
+                            Watch video
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+                <p className="text-xs text-[var(--foreground-muted)] mt-3">
+                  If your suggestion is different, continue filling out the form below.
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-gray-500 mt-3">
-              If your suggestion is different, continue filling out the form below.
-            </p>
           </div>
         )}
 
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium mb-2">
+        {/* Description Field */}
+        <div className="space-y-2">
+          <label htmlFor="description" className="block text-sm font-medium text-[var(--foreground)]">
             Description
           </label>
           <textarea
@@ -144,51 +181,89 @@ export default function SubmitPage() {
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={4}
-            className="w-full px-4 py-2 bg-[var(--card)] border border-[var(--border)] rounded-lg focus:outline-none focus:border-[var(--primary)] resize-none"
-            placeholder="Describe what the video should cover..."
+            className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--foreground-muted)] resize-none"
+            placeholder="Describe what the video should cover, why it would be useful, and any specific topics you'd like addressed..."
           />
         </div>
 
+        {/* Contact Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label htmlFor="name" className="block text-sm font-medium text-[var(--foreground)]">
               Your Name
             </label>
-            <input
-              type="text"
-              id="name"
-              value={formData.requester_name}
-              onChange={(e) => setFormData({ ...formData, requester_name: e.target.value })}
-              className="w-full px-4 py-2 bg-[var(--card)] border border-[var(--border)] rounded-lg focus:outline-none focus:border-[var(--primary)]"
-              placeholder="John Doe"
-            />
+            <div className="relative">
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--foreground-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <input
+                type="text"
+                id="name"
+                value={formData.requester_name}
+                onChange={(e) => setFormData({ ...formData, requester_name: e.target.value })}
+                className="w-full pl-12 pr-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--foreground-muted)]"
+                placeholder="John Doe"
+              />
+            </div>
           </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-medium text-[var(--foreground)]">
               Your Email
             </label>
-            <input
-              type="email"
-              id="email"
-              value={formData.requester_email}
-              onChange={(e) => setFormData({ ...formData, requester_email: e.target.value })}
-              className="w-full px-4 py-2 bg-[var(--card)] border border-[var(--border)] rounded-lg focus:outline-none focus:border-[var(--primary)]"
-              placeholder="john@example.com"
-            />
+            <div className="relative">
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--foreground-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <input
+                type="email"
+                id="email"
+                value={formData.requester_email}
+                onChange={(e) => setFormData({ ...formData, requester_email: e.target.value })}
+                className="w-full pl-12 pr-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--foreground-muted)]"
+                placeholder="john@example.com"
+              />
+            </div>
           </div>
         </div>
 
+        {/* Error Message */}
         {error && (
-          <div className="text-red-500 text-sm">{error}</div>
+          <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
+          </div>
         )}
 
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg transition-colors disabled:opacity-50"
+          className="btn-primary w-full py-4 rounded-xl font-semibold text-white text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Suggestion'}
+          {isSubmitting ? (
+            <>
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Submitting...
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+              Submit Request
+            </>
+          )}
         </button>
+
+        {/* Privacy Note */}
+        <p className="text-xs text-[var(--foreground-muted)] text-center">
+          Your email will only be used to notify you when your requested video is published.
+        </p>
       </form>
     </div>
   )

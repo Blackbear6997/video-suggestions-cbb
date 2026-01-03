@@ -12,7 +12,6 @@ interface SuggestionCardProps {
 function getVideoEmbed(url: string): { type: 'youtube' | 'vimeo' | 'direct' | null; embedUrl: string | null; thumbnailUrl: string | null } {
   if (!url) return { type: null, embedUrl: null, thumbnailUrl: null }
 
-  // YouTube
   const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
   if (youtubeMatch) {
     return {
@@ -22,17 +21,15 @@ function getVideoEmbed(url: string): { type: 'youtube' | 'vimeo' | 'direct' | nu
     }
   }
 
-  // Vimeo
   const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/)
   if (vimeoMatch) {
     return {
       type: 'vimeo',
       embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
-      thumbnailUrl: null // Vimeo thumbnails require API call
+      thumbnailUrl: null
     }
   }
 
-  // Direct video file
   if (url.match(/\.(mp4|webm|ogg)(\?.*)?$/i)) {
     return { type: 'direct', embedUrl: url, thumbnailUrl: null }
   }
@@ -50,28 +47,30 @@ function VideoEmbed({ url }: { url: string }) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-block mt-3 text-[var(--primary)] hover:underline"
+        className="inline-flex items-center gap-2 text-[var(--primary)] hover:underline"
       >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
         Watch Video
       </a>
     )
   }
 
-  // For YouTube, show thumbnail first, then embed on click
   if (type === 'youtube' && thumbnailUrl && !showPlayer) {
     return (
       <div
-        className="inline-block relative cursor-pointer group w-full md:w-80"
+        className="relative cursor-pointer group w-full md:w-80 overflow-hidden rounded-xl"
         onClick={() => setShowPlayer(true)}
       >
         <img
           src={thumbnailUrl}
           alt="Video thumbnail"
-          className="w-full rounded-lg border border-[var(--border)] block"
+          className="w-full rounded-xl block transition-transform group-hover:scale-105"
         />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center group-hover:bg-red-700 transition-colors">
-            <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+            <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z"/>
             </svg>
           </div>
@@ -80,13 +79,12 @@ function VideoEmbed({ url }: { url: string }) {
     )
   }
 
-  // Show embedded player
   if (type === 'direct') {
     return (
       <video
         src={embedUrl}
         controls
-        className="w-full md:w-80 rounded-lg border border-[var(--border)]"
+        className="w-full md:w-80 rounded-xl"
       />
     )
   }
@@ -94,27 +92,19 @@ function VideoEmbed({ url }: { url: string }) {
   return (
     <iframe
       src={embedUrl}
-      className="w-full md:w-80 aspect-video rounded-lg border border-[var(--border)]"
+      className="w-full md:w-80 aspect-video rounded-xl"
       allowFullScreen
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
     />
   )
 }
 
-const statusColors = {
-  hidden: 'bg-purple-500',
-  pending_review: 'bg-gray-500',
-  open_for_voting: 'bg-blue-500',
-  in_progress: 'bg-[var(--warning)]',
-  published: 'bg-[var(--success)]',
-}
-
-const statusLabels = {
-  hidden: 'Hidden',
-  pending_review: 'Pending Review',
-  open_for_voting: 'Open for Voting',
-  in_progress: 'In Progress',
-  published: 'Published',
+const statusConfig = {
+  hidden: { color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', label: 'Hidden' },
+  pending_review: { color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', label: 'Pending Review' },
+  open_for_voting: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Open for Voting' },
+  in_progress: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'In Progress' },
+  published: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', label: 'Published' },
 }
 
 export default function SuggestionCard({ suggestion, onVote, showVoteButton = true }: SuggestionCardProps) {
@@ -123,6 +113,7 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
   const [showVoteForm, setShowVoteForm] = useState(false)
   const [voteError, setVoteError] = useState('')
   const [localVotes, setLocalVotes] = useState(suggestion.votes_count)
+  const [hasVoted, setHasVoted] = useState(false)
 
   const handleVote = async () => {
     if (!voteEmail) {
@@ -139,6 +130,7 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
         setLocalVotes(prev => prev + 1)
         setShowVoteForm(false)
         setVoteEmail('')
+        setHasVoted(true)
       } else {
         setVoteError('You have already voted for this suggestion')
       }
@@ -149,32 +141,36 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
     }
   }
 
-  // Special layout for published videos
+  // Published video layout
   if (suggestion.status === 'published' && suggestion.video_url) {
     return (
-      <div className="bg-[var(--card)] rounded-lg p-6 border border-[var(--border)] hover:border-[var(--primary)] transition-colors">
-        {/* Title row */}
+      <div className="card-hover bg-[var(--card)] rounded-2xl p-6 border border-[var(--border)]">
         <div className="flex items-center gap-3 mb-4">
-          <h3 className="text-lg font-semibold">{suggestion.title}</h3>
-          <span className={`px-2 py-0.5 rounded text-xs text-white ${statusColors[suggestion.status]}`}>
-            {statusLabels[suggestion.status]}
+          <h3 className="text-xl font-semibold">{suggestion.title}</h3>
+          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusConfig[suggestion.status].color}`}>
+            {statusConfig[suggestion.status].label}
           </span>
         </div>
 
-        {/* Desktop: video left, description right | Mobile: video top, description bottom */}
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col md:flex-row gap-6">
           <div className="md:flex-shrink-0">
             <VideoEmbed url={suggestion.video_url} />
           </div>
           <div className="flex-1 flex flex-col justify-between">
             <div>
-              <p className="text-gray-400 mb-3">{suggestion.description}</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-[var(--foreground-muted)] mb-4 leading-relaxed">{suggestion.description}</p>
+              <div className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
                 Requested by {suggestion.requester_name}
-              </p>
+              </div>
             </div>
-            <div className="mt-3 text-sm text-gray-500">
-              {localVotes} votes
+            <div className="mt-4 flex items-center gap-2 text-[var(--foreground-muted)]">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              <span className="font-semibold text-[var(--foreground)]">{localVotes}</span> votes
             </div>
           </div>
         </div>
@@ -182,75 +178,87 @@ export default function SuggestionCard({ suggestion, onVote, showVoteButton = tr
     )
   }
 
+  // Regular card layout
   return (
-    <div className="bg-[var(--card)] rounded-lg p-6 border border-[var(--border)] hover:border-[var(--primary)] transition-colors">
+    <div className="card-hover bg-[var(--card)] rounded-2xl p-6 border border-[var(--border)]">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-lg font-semibold">{suggestion.title}</h3>
-            <span className={`px-2 py-0.5 rounded text-xs text-white ${statusColors[suggestion.status]}`}>
-              {statusLabels[suggestion.status]}
+          <div className="flex items-center gap-3 mb-3">
+            <h3 className="text-xl font-semibold">{suggestion.title}</h3>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusConfig[suggestion.status].color}`}>
+              {statusConfig[suggestion.status].label}
             </span>
           </div>
-          <p className="text-gray-400 mb-3">{suggestion.description}</p>
-          <p className="text-sm text-gray-500">
+          <p className="text-[var(--foreground-muted)] mb-4 leading-relaxed">{suggestion.description}</p>
+          <div className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
             Requested by {suggestion.requester_name}
-          </p>
+          </div>
         </div>
 
-        {showVoteButton && suggestion.status === 'open_for_voting' && (
-          <div className="flex flex-col items-center gap-2">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[var(--primary)]">{localVotes}</div>
-              <div className="text-xs text-gray-500">votes</div>
-            </div>
+        {/* Vote section */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--gradient-start)]/10 to-[var(--gradient-end)]/10 border border-[var(--border)] flex flex-col items-center justify-center">
+            <div className="text-2xl font-bold gradient-text">{localVotes}</div>
+            <div className="text-xs text-[var(--foreground-muted)]">votes</div>
+          </div>
 
-            {!showVoteForm ? (
-              <button
-                onClick={() => setShowVoteForm(true)}
-                className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg transition-colors text-sm"
-              >
-                Vote
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  value={voteEmail}
-                  onChange={(e) => setVoteEmail(e.target.value)}
-                  className="px-3 py-1.5 bg-[var(--background)] border border-[var(--border)] rounded text-sm w-40"
-                />
-                {voteError && <p className="text-red-500 text-xs">{voteError}</p>}
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleVote}
-                    disabled={isVoting}
-                    className="px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded text-sm disabled:opacity-50"
-                  >
-                    {isVoting ? '...' : 'Submit'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowVoteForm(false)
-                      setVoteError('')
-                    }}
-                    className="px-3 py-1.5 border border-[var(--border)] rounded text-sm hover:bg-[var(--card-hover)]"
-                  >
-                    Cancel
-                  </button>
+          {showVoteButton && suggestion.status === 'open_for_voting' && !hasVoted && (
+            <>
+              {!showVoteForm ? (
+                <button
+                  onClick={() => setShowVoteForm(true)}
+                  className="btn-primary w-full px-4 py-2.5 rounded-xl font-medium text-white text-sm flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                  Vote
+                </button>
+              ) : (
+                <div className="flex flex-col gap-2 w-full">
+                  <input
+                    type="email"
+                    placeholder="Your email"
+                    value={voteEmail}
+                    onChange={(e) => setVoteEmail(e.target.value)}
+                    className="px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-lg text-sm w-full"
+                  />
+                  {voteError && <p className="text-red-400 text-xs">{voteError}</p>}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleVote}
+                      disabled={isVoting}
+                      className="flex-1 px-3 py-2 btn-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                    >
+                      {isVoting ? '...' : 'Submit'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowVoteForm(false)
+                        setVoteError('')
+                      }}
+                      className="px-3 py-2 border border-[var(--border)] rounded-lg text-sm hover:bg-[var(--card-hover)]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </>
+          )}
 
-        {(!showVoteButton || suggestion.status !== 'open_for_voting') && (
-          <div className="text-center">
-            <div className="text-2xl font-bold text-[var(--primary)]">{localVotes}</div>
-            <div className="text-xs text-gray-500">votes</div>
-          </div>
-        )}
+          {hasVoted && (
+            <div className="text-emerald-400 text-sm flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Voted!
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
