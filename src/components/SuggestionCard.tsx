@@ -61,13 +61,13 @@ function VideoEmbed({ url }: { url: string }) {
   if (type === 'youtube' && thumbnailUrl && !showPlayer) {
     return (
       <div
-        className="mt-3 relative cursor-pointer group"
+        className="mt-3 inline-block relative cursor-pointer group max-w-md"
         onClick={() => setShowPlayer(true)}
       >
         <img
           src={thumbnailUrl}
           alt="Video thumbnail"
-          className="w-full max-w-md rounded-lg border border-[var(--border)]"
+          className="w-full rounded-lg border border-[var(--border)] block"
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center group-hover:bg-red-700 transition-colors">
