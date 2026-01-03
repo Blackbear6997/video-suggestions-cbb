@@ -31,11 +31,12 @@ export default function SubmitPage() {
       return
     }
 
+    // Search in both title and description
     const { data } = await supabase
       .from('suggestions')
       .select('*')
-      .ilike('title', `%${title}%`)
       .in('status', ['open_for_voting', 'in_progress', 'published'])
+      .or(`title.ilike.%${title}%,description.ilike.%${title}%`)
       .limit(5)
 
     if (data) {
