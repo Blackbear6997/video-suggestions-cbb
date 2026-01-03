@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import type { Suggestion } from '@/lib/database.types'
+import type { Suggestion, Channel } from '@/lib/database.types'
 import SuggestionCard from '@/components/SuggestionCard'
 
 type FilterStatus = 'all' | 'open_for_voting' | 'in_progress' | 'published'
+type FilterChannel = 'all' | Channel
 
 const filterConfig = {
   all: { label: 'All', icon: '◆' },
@@ -15,12 +17,33 @@ const filterConfig = {
   published: { label: 'Published', icon: '✓' },
 }
 
-export default function Home() {
+const channelFilterConfig = {
+  all: { label: 'All Channels', color: '' },
+  cbb: { label: 'CBB', color: 'text-blue-400' },
+  pmgpt: { label: 'PMGPT', color: 'text-purple-400' },
+}
+
+function HomeContent() {
+  const searchParams = useSearchParams()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [filteredSuggestions, setFilteredSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterStatus>('all')
+  const [channelFilter, setChannelFilter] = useState<FilterChannel>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showSuccessToast, setShowSuccessToast] = useState(false)
+
+  // Check for submitted query param and show success toast
+  useEffect(() => {
+    if (searchParams.get('submitted') === 'true') {
+      setShowSuccessToast(true)
+      // Clear the URL param without refreshing
+      window.history.replaceState({}, '', '/')
+      // Auto-dismiss after 5 seconds
+      const timer = setTimeout(() => setShowSuccessToast(false), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams])
 
   const fetchSuggestions = useCallback(async () => {
     setLoading(true)
@@ -51,6 +74,10 @@ export default function Home() {
       filtered = filtered.filter(s => s.status === filter)
     }
 
+    if (channelFilter !== 'all') {
+      filtered = filtered.filter(s => s.channel === channelFilter)
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -61,7 +88,7 @@ export default function Home() {
     }
 
     setFilteredSuggestions(filtered)
-  }, [suggestions, filter, searchQuery])
+  }, [suggestions, filter, channelFilter, searchQuery])
 
   const handleVote = async (suggestionId: string): Promise<boolean> => {
     // Just increment the vote count - localStorage handles duplicate prevention on client
@@ -91,6 +118,31 @@ export default function Home() {
 
   return (
     <div className="space-y-8 animate-fade-in">
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+          <div className="bg-[#36D6B5] text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold">Request submitted!</p>
+              <p className="text-sm text-white/80">We&apos;ll review your suggestion soon.</p>
+            </div>
+            <button
+              onClick={() => setShowSuccessToast(false)}
+              className="ml-4 p-1 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--card)] to-[var(--background-secondary)] border border-[var(--border)] p-8 md:p-12">
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5"></div>
@@ -139,21 +191,46 @@ export default function Home() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--foreground-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search suggestions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:border-[var(--primary)]"
-          />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--foreground-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search suggestions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:border-[var(--primary)]"
+            />
+          </div>
+
+          {/* Channel Filter */}
+          <div className="flex gap-2 p-1 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+            {(Object.keys(channelFilterConfig) as FilterChannel[]).map((channel) => (
+              <button
+                key={channel}
+                onClick={() => setChannelFilter(channel)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  channelFilter === channel
+                    ? 'bg-gradient-to-r from-[var(--gradient-start)] to-[var(--gradient-end)] text-white shadow-lg'
+                    : `text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)] ${channelFilterConfig[channel].color}`
+                }`}
+              >
+                {channel !== 'all' && (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                )}
+                {channelFilterConfig[channel].label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex gap-2 p-1 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+        {/* Status Filter */}
+        <div className="flex gap-2 p-1 bg-[var(--card)] border border-[var(--border)] rounded-xl w-fit">
           {(Object.keys(filterConfig) as FilterStatus[]).map((status) => (
             <button
               key={status}
@@ -213,5 +290,20 @@ export default function Home() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin"></div>
+          <p className="text-[var(--foreground-muted)]">Loading...</p>
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   )
 }
