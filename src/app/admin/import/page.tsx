@@ -6,12 +6,16 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Channel } from '@/lib/database.types'
 
+type VideoType = 'short' | 'video' | 'live'
+
 interface YouTubeVideo {
   id: string
   title: string
   description: string
   publishedAt: string
   thumbnail: string
+  duration: string
+  videoType: VideoType
 }
 
 export default function ImportPage() {
@@ -22,6 +26,7 @@ export default function ImportPage() {
   const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set())
   const [existingVideoIds, setExistingVideoIds] = useState<Set<string>>(new Set())
   const [channel, setChannel] = useState<Channel>('cbb')
+  const [typeFilter, setTypeFilter] = useState<Set<VideoType>>(new Set(['video', 'live']))
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -89,8 +94,20 @@ export default function ImportPage() {
     setSelectedVideos(newSelected)
   }
 
+  const toggleTypeFilter = (type: VideoType) => {
+    const newFilter = new Set(typeFilter)
+    if (newFilter.has(type)) {
+      newFilter.delete(type)
+    } else {
+      newFilter.add(type)
+    }
+    setTypeFilter(newFilter)
+  }
+
+  const filteredVideos = videos.filter(v => typeFilter.has(v.videoType))
+
   const selectAll = () => {
-    const newVideos = videos.filter(v => !existingVideoIds.has(v.id))
+    const newVideos = filteredVideos.filter(v => !existingVideoIds.has(v.id))
     setSelectedVideos(new Set(newVideos.map(v => v.id)))
   }
 
@@ -133,7 +150,12 @@ export default function ImportPage() {
     setImporting(false)
   }
 
-  const newVideosCount = videos.filter(v => !existingVideoIds.has(v.id)).length
+  const newVideosCount = filteredVideos.filter(v => !existingVideoIds.has(v.id)).length
+  const typeCounts = {
+    video: videos.filter(v => v.videoType === 'video').length,
+    live: videos.filter(v => v.videoType === 'live').length,
+    short: videos.filter(v => v.videoType === 'short').length,
+  }
 
   return (
     <div className="space-y-6">
@@ -220,13 +242,55 @@ export default function ImportPage() {
         </div>
       )}
 
-      {/* Videos List */}
+      {/* Video Type Filter */}
       {videos.length > 0 && (
+        <div className="bg-[var(--card)] rounded-xl p-4 border border-[var(--border)]">
+          <h3 className="text-sm font-medium mb-3">Filter by Type</h3>
+          <div className="flex gap-3">
+            <button
+              onClick={() => toggleTypeFilter('video')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                typeFilter.has('video')
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-[var(--background)] border border-[var(--border)] text-[var(--foreground-muted)]'
+              }`}
+            >
+              <span>🎬</span>
+              Videos ({typeCounts.video})
+            </button>
+            <button
+              onClick={() => toggleTypeFilter('live')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                typeFilter.has('live')
+                  ? 'bg-red-500 text-white'
+                  : 'bg-[var(--background)] border border-[var(--border)] text-[var(--foreground-muted)]'
+              }`}
+            >
+              <span>🔴</span>
+              Lives ({typeCounts.live})
+            </button>
+            <button
+              onClick={() => toggleTypeFilter('short')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                typeFilter.has('short')
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-[var(--background)] border border-[var(--border)] text-[var(--foreground-muted)]'
+              }`}
+            >
+              <span>📱</span>
+              Shorts ({typeCounts.short})
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Videos List */}
+      {filteredVideos.length > 0 && (
         <div className="bg-[var(--card)] rounded-xl p-6 border border-[var(--border)]">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold">
-                Found {videos.length} videos ({newVideosCount} new)
+                Showing {filteredVideos.length} videos ({newVideosCount} new)
               </h2>
               <p className="text-sm text-[var(--foreground-muted)]">
                 {selectedVideos.size} selected for import
@@ -256,8 +320,9 @@ export default function ImportPage() {
           </div>
 
           <div className="space-y-3 max-h-[600px] overflow-y-auto">
-            {videos.map(video => {
+            {filteredVideos.map(video => {
               const alreadyExists = existingVideoIds.has(video.id)
+              const typeLabel = { video: '🎬', live: '🔴', short: '📱' }[video.videoType]
               return (
                 <div
                   key={video.id}
@@ -276,7 +341,10 @@ export default function ImportPage() {
                     className="w-32 h-20 object-cover rounded"
                   />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">{video.title}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium truncate">{video.title}</h3>
+                      <span className="text-sm" title={video.videoType}>{typeLabel}</span>
+                    </div>
                     <p className="text-sm text-[var(--foreground-muted)] line-clamp-2">
                       {video.description || 'No description'}
                     </p>

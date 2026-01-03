@@ -14,6 +14,25 @@ interface YouTubeVideo {
   description: string
   publishedAt: string
   thumbnail: string
+  duration: string
+  videoType: 'short' | 'video' | 'live'
+}
+
+// Parse ISO 8601 duration to seconds
+function parseDuration(duration: string): number {
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+  if (!match) return 0
+  const hours = parseInt(match[1] || '0')
+  const minutes = parseInt(match[2] || '0')
+  const seconds = parseInt(match[3] || '0')
+  return hours * 3600 + minutes * 60 + seconds
+}
+
+// Determine video type based on duration
+function getVideoType(durationSeconds: number, isLive: boolean): 'short' | 'video' | 'live' {
+  if (isLive) return 'live'
+  if (durationSeconds <= 60) return 'short'
+  return 'video'
 }
 
 async function getChannelId(handle: string): Promise<string | null> {
@@ -40,10 +59,11 @@ async function getChannelVideos(channelId: string, maxResults = 50): Promise<You
     if (!uploadsPlaylistId) return []
 
     // Get videos from uploads playlist
-    const videos: YouTubeVideo[] = []
+    const videoIds: string[] = []
+    const videoBasicInfo: Map<string, { title: string; description: string; publishedAt: string; thumbnail: string }> = new Map()
     let nextPageToken = ''
 
-    while (videos.length < maxResults) {
+    while (videoIds.length < maxResults) {
       const playlistResponse = await fetch(
         `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50&pageToken=${nextPageToken}&key=${YOUTUBE_API_KEY}`
       )
@@ -52,9 +72,10 @@ async function getChannelVideos(channelId: string, maxResults = 50): Promise<You
       if (!playlistData.items) break
 
       for (const item of playlistData.items) {
-        if (videos.length >= maxResults) break
-        videos.push({
-          id: item.snippet.resourceId.videoId,
+        if (videoIds.length >= maxResults) break
+        const videoId = item.snippet.resourceId.videoId
+        videoIds.push(videoId)
+        videoBasicInfo.set(videoId, {
           title: item.snippet.title,
           description: item.snippet.description?.substring(0, 500) || '',
           publishedAt: item.snippet.publishedAt,
@@ -64,6 +85,32 @@ async function getChannelVideos(channelId: string, maxResults = 50): Promise<You
 
       nextPageToken = playlistData.nextPageToken
       if (!nextPageToken) break
+    }
+
+    // Fetch video details (duration, live status) in batches of 50
+    const videos: YouTubeVideo[] = []
+    for (let i = 0; i < videoIds.length; i += 50) {
+      const batch = videoIds.slice(i, i + 50)
+      const detailsResponse = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,liveStreamingDetails&id=${batch.join(',')}&key=${YOUTUBE_API_KEY}`
+      )
+      const detailsData = await detailsResponse.json()
+
+      for (const item of detailsData.items || []) {
+        const basicInfo = videoBasicInfo.get(item.id)
+        if (!basicInfo) continue
+
+        const duration = item.contentDetails?.duration || 'PT0S'
+        const durationSeconds = parseDuration(duration)
+        const isLive = !!item.liveStreamingDetails
+
+        videos.push({
+          id: item.id,
+          ...basicInfo,
+          duration,
+          videoType: getVideoType(durationSeconds, isLive),
+        })
+      }
     }
 
     return videos
